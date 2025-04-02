@@ -1,0 +1,39 @@
+.TH autoperf.CONF 5 "2024" "autoperf" "System Administration"
+.SH NAME
+autoperf.conf \- configuration file for autoperf daemon
+.SH SYNOPSIS
+/etc/autoperf/config.yaml
+.SH DESCRIPTION
+The configuration file for autoperf daemon is in YAML format and contains settings that control the behavior of CPU performance bias adjustment based on system load, temperature, and power status.
+.SH CONFIGURATION PARAMETERS
+.TP
+.B highLoadThreshold
+CPU load threshold (percentage) above which the performance bias will be set to "performance" mode when AC is plugged in.
+.TP
+.B mediumLoadThreshold
+CPU load threshold (percentage) above which the performance bias will be set to "balance-performance" mode when AC is plugged in.
+.TP
+.B highTempThreshold
+CPU temperature threshold (Celsius) above which the performance bias will be set to "balance-power" mode regardless of other conditions.
+.TP
+.B monitorInterval
+Interval in seconds between monitoring cycles.
+.TP
+.B cpuSampleInterval
+Duration in seconds over which CPU load is sampled.
+.TP
+.B logFile
+Path to the log file where the daemon will write its logs.
+.SH EXAMPLE
+.nf
+highLoadThreshold: 80
+mediumLoadThreshold: 50
+highTempThreshold: 80
+monitorInterval: 5
+cpuSampleInterval: 3
+logFile: /var/log/autoperf.log
+.fi
+.SH SEE ALSO
+.BR autoperf (8)
+.SH AUTHOR
+Ased Mammad <asedmammad@gmail.com>

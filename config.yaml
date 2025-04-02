@@ -1,0 +1,11 @@
+highLoadThreshold: 80
+mediumLoadThreshold: 50
+lowLoadThreshold: 30
+highTempThreshold: 80
+performance: "performance"
+balancePerformance: "balance-performance"
+balancePower: "balance-power"
+power: "power"
+monitorInterval: 5
+cpuSampleInterval: 10  # seconds - interval for CPU usage sampling
+logFile: "/var/log/autoperf.log"

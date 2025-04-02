@@ -1,0 +1,14 @@
+[Unit]
+Description=Auto Performance Bias Daemon
+Documentation=man:autoperf.conf(5)
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/autoperf
+Restart=always
+RestartSec=10
+User=root
+
+[Install]
+WantedBy=multi-user.target
