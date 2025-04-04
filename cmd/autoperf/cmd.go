@@ -38,6 +38,7 @@ func Execute() error {
 
 	// Initialize current performance bias
 	currentPerfBias := "balance-power"
+	forceUpdateCounter := 0
 
 	// Main monitoring loop
 	for {
@@ -63,15 +64,21 @@ func Execute() error {
 				powerCfg = &cfg.AC
 			}
 
-			if err := runMonitoringCycle(cfg, powerCfg, acPlugged, &currentPerfBias); err != nil {
+			forceUpdate := forceUpdateCounter >= 4
+			if forceUpdate {
+				forceUpdateCounter = 0
+			}
+
+			if err := runMonitoringCycle(cfg, powerCfg, acPlugged, &currentPerfBias, forceUpdate); err != nil {
 				log.Printf("Error in monitoring cycle: %v", err)
 			}
+			forceUpdateCounter++
 			time.Sleep(time.Duration(powerCfg.WaitBetweenUpdates) * time.Second)
 		}
 	}
 }
 
-func runMonitoringCycle(cfg *config.Config, powerCfg *config.PowerConfig, acPlugged bool, currentPerfBias *string) error {
+func runMonitoringCycle(cfg *config.Config, powerCfg *config.PowerConfig, acPlugged bool, currentPerfBias *string, forceUpdate bool) error {
 	cpuLoad, err := monitor.GetCPULoad(powerCfg.CPUSampleInterval)
 	if err != nil {
 		return err
@@ -99,7 +106,7 @@ func runMonitoringCycle(cfg *config.Config, powerCfg *config.PowerConfig, acPlug
 		perfBias = "balance-power"
 	}
 
-	if perfBias != *currentPerfBias {
+	if perfBias != *currentPerfBias || forceUpdate {
 		if err := power.SetEnergyPerfBias(perfBias); err != nil {
 			return err
 		}
