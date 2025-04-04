@@ -50,15 +50,29 @@ sudo systemctl start autoperf
 ## Configuration
 The configuration file is located at /etc/autoperf.conf.
 
-Here's an example configuration:
+Here's the default configuration:
 
-```yaml
-highLoadThreshold: 80    # CPU load threshold for performance mode
-mediumLoadThreshold: 50  # CPU load threshold for balanced performance
-highTempThreshold: 80    # Temperature threshold (°C) for power saving
-monitorInterval: 5       # Monitoring interval in seconds
-cpuSampleInterval: 3     # CPU load sampling duration in seconds
-logFile: /var/log/autoperf.log
+```ini
+[General]
+Enabled=true
+SysfsPowerPath="/sys/class/power_supply/AC*/online"
+LogFile="/var/log/autoperf.log"
+
+[Battery]
+WaitBetweenUpdates=30
+CPULoadSampleInterval=10
+LowLoadThreshold=30
+MediumLoadThreshold=50
+HighLoadThreshold=80
+HighTempThreshold=75
+
+[AC]
+WaitBetweenUpdates=5
+CPULoadSampleInterval=10
+LowLoadThreshold=25
+MediumLoadThreshold=50
+HighLoadThreshold=80
+HighTempThreshold=90
  ```
 
 ## Performance Bias Modes
