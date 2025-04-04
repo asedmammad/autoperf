@@ -51,7 +51,7 @@ func Execute() error {
 				continue
 			}
 
-			acPlugged, err := power.IsACPlugged()
+			acPlugged, err := power.IsACPlugged(cfg.SysfsPowerPath)
 			if err != nil {
 				log.Printf("Error detecting power source: %v", err)
 				continue

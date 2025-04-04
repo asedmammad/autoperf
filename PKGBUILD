@@ -1,12 +1,12 @@
 # Maintainer: Ased Mammad <asedmammad@gmail.com>
 pkgname=autoperf
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="Automatic CPU performance bias adjustment based on system load and temperature"
 arch=('x86_64')
 url="https://github.com/asedmammad/autoperf"
 license=('MIT')
-depends=('glibc')
+depends=('glibc' 'x86_energy_perf_policy')
 makedepends=('go')
 backup=('etc/autoperf.conf')
 source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
