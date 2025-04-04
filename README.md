@@ -6,6 +6,7 @@ autoperf is a lightweight daemon that automatically adjusts CPU performance bias
 
 - Dynamic CPU performance bias adjustment
 - Monitoring of:
+  - Pressure Stall Information (`/proc/pressure/cpu`)
   - CPU load
   - CPU temperature
   - AC power status
@@ -57,10 +58,15 @@ Here's the default configuration:
 Enabled=true
 SysfsPowerPath="/sys/class/power_supply/AC*/online"
 LogFile="/var/log/autoperf.log"
+Metrics="PSI" # PSI or Load
+Verbose=true
 
 [Battery]
-WaitBetweenUpdates=30
+WaitBetweenUpdates=3000
 CPULoadSampleInterval=10
+PSILowThreshold=4.0
+PSIMediumThreshold=7.0
+PSIHighThreshold=10.0
 LoadLowThreshold=30
 LoadMediumThreshold=50
 LoadHighThreshold=80
@@ -69,6 +75,9 @@ HighTempThreshold=75
 [AC]
 WaitBetweenUpdates=5
 CPULoadSampleInterval=10
+PSILowThreshold=4.0
+PSIMediumThreshold=7.0
+PSIHighThreshold=10.0
 LoadLowThreshold=25
 LoadMediumThreshold=50
 LoadHighThreshold=80
