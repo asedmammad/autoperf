@@ -2,38 +2,66 @@
 .SH NAME
 autoperf.conf \- configuration file for autoperf daemon
 .SH SYNOPSIS
-/etc/autoperf/config.yaml
+/etc/autoperf.conf
 .SH DESCRIPTION
-The configuration file for autoperf daemon is in YAML format and contains settings that control the behavior of CPU performance bias adjustment based on system load, temperature, and power status.
-.SH CONFIGURATION PARAMETERS
+The configuration file for autoperf daemon is in INI format and contains settings that control the behavior of CPU performance bias adjustment based on system load, temperature, and power status. The configuration is divided into sections for general settings, battery operation, and AC power operation.
+.SH CONFIGURATION SECTIONS
+.SS General
 .TP
-.B highLoadThreshold
-CPU load threshold (percentage) above which the performance bias will be set to "performance" mode when AC is plugged in.
+.B Enabled
+Enable or disable the autoperf daemon (true/false).
 .TP
-.B mediumLoadThreshold
-CPU load threshold (percentage) above which the performance bias will be set to "balance-performance" mode when AC is plugged in.
+.B SysfsPowerPath
+Path to the sysfs power supply status file.
 .TP
-.B highTempThreshold
-CPU temperature threshold (Celsius) above which the performance bias will be set to "balance-power" mode regardless of other conditions.
+.B LogFile
+Path to the log file where the daemon will write its logs.
+.SS Battery
+Settings that apply when running on battery power.
 .TP
-.B monitorInterval
+.B WaitBetweenUpdates
 Interval in seconds between monitoring cycles.
 .TP
-.B cpuSampleInterval
+.B CPULoadSampleInterval
 Duration in seconds over which CPU load is sampled.
 .TP
-.B logFile
-Path to the log file where the daemon will write its logs.
+.B LowLoadThreshold
+CPU load threshold (percentage) below which power-saving mode is applied.
+.TP
+.B MediumLoadThreshold
+CPU load threshold (percentage) above which balanced mode is applied.
+.TP
+.B HighLoadThreshold
+CPU load threshold (percentage) above which performance mode is applied.
+.TP
+.B HighTempThreshold
+CPU temperature threshold (Celsius) above which power-saving mode is forced.
+.SS AC
+Settings that apply when running on AC power. Contains the same parameters as the Battery section.
 .SH EXAMPLE
 .nf
-highLoadThreshold: 80
-mediumLoadThreshold: 50
-highTempThreshold: 80
-monitorInterval: 5
-cpuSampleInterval: 3
-logFile: /var/log/autoperf.log
+[General]
+Enabled=true
+SysfsPowerPath="/sys/class/power_supply/AC*/online"
+LogFile="/var/log/autoperf.log"
+
+[Battery]
+WaitBetweenUpdates=30
+CPULoadSampleInterval=10
+LowLoadThreshold=30
+MediumLoadThreshold=50
+HighLoadThreshold=80
+HighTempThreshold=75
+
+[AC]
+WaitBetweenUpdates=5
+CPULoadSampleInterval=10
+LowLoadThreshold=30
+MediumLoadThreshold=50
+HighLoadThreshold=80
+HighTempThreshold=90
 .fi
 .SH SEE ALSO
 .BR autoperf (8)
 .SH AUTHOR
-Ased Mammad <asedmammad@gmail.com>
+Ased Mammad <mammad.ased@gmail.com>

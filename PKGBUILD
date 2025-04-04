@@ -8,7 +8,7 @@ url="https://github.com/asedmammad/autoperf"
 license=('MIT')
 depends=('glibc')
 makedepends=('go')
-backup=('etc/autoperf/config.yaml')
+backup=('etc/autoperf.conf')
 source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
 sha256sums=('SKIP')
 
@@ -33,7 +33,7 @@ package() {
     install -Dm644 doc/autoperf.conf.5 "$pkgdir/usr/share/man/man5/autoperf.conf.5"
     
     # Install config file
-    install -Dm644 config.yaml "$pkgdir/etc/autoperf/config.yaml"
+    install -Dm644 autoperf.conf "$pkgdir/etc/autoperf.conf"
     
     # Install systemd service file
     install -Dm644 systemd/autoperf.service "$pkgdir/usr/lib/systemd/system/autoperf.service"

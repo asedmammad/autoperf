@@ -36,8 +36,7 @@ sudo cp autoperf /usr/bin/
 
 2. Create configuration directory and copy config file:
 ```bash
-sudo mkdir -p /etc/autoperf
-sudo cp config.yaml /etc/autoperf/
+sudo cp autoperf.conf /etc/autoperf.conf
  ```
 
 3. Install systemd service:
@@ -49,7 +48,7 @@ sudo systemctl start autoperf
  ```
 
 ## Configuration
-The configuration file is located at /etc/autoperf/config.yaml.
+The configuration file is located at /etc/autoperf.conf.
 
 Here's an example configuration:
 
