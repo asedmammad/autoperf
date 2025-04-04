@@ -11,18 +11,23 @@ type Config struct {
 	Enabled        bool   `ini:"Enabled,omitempty"`
 	SysfsPowerPath string `ini:"SysfsPowerPath,omitempty"`
 	LogFile        string `ini:"LogFile"`
+	MetricType     string `ini:"Metrics"`
 
 	// Power-specific settings
 	Battery PowerConfig `ini:"-"`
 	AC      PowerConfig `ini:"-"`
+	Verbose bool        `ini:"Verbose"`
 }
 
 type PowerConfig struct {
 	WaitBetweenUpdates  int     `ini:"WaitBetweenUpdates"`
 	CPUSampleInterval   int     `ini:"CPULoadSampleInterval"`
-	LowLoadThreshold    float64 `ini:"LowLoadThreshold"`
-	MediumLoadThreshold float64 `ini:"MediumLoadThreshold"`
-	HighLoadThreshold   float64 `ini:"HighLoadThreshold"`
+	PSILowThreshold     float64 `ini:"PSILowThreshold"`
+	PSIMediumThreshold  float64 `ini:"PSIMediumThreshold"`
+	PSIHighThreshold    float64 `ini:"PSIHighThreshold"`
+	LoadLowThreshold    float64 `ini:"LoadLowThreshold"`
+	LoadMediumThreshold float64 `ini:"LoadMediumThreshold"`
+	LoadHighThreshold   float64 `ini:"LoadHighThreshold"`
 	HighTempThreshold   float64 `ini:"HighTempThreshold"`
 }
 
@@ -75,13 +80,13 @@ func validate(c *Config) error {
 }
 
 func validatePowerConfig(pc *PowerConfig, source string) error {
-	if pc.HighLoadThreshold <= 0 || pc.HighLoadThreshold > 100 {
+	if pc.LoadHighThreshold <= 0 || pc.LoadHighThreshold > 100 {
 		return fmt.Errorf("%s highLoadThreshold must be between 0 and 100", source)
 	}
-	if pc.MediumLoadThreshold <= 0 || pc.MediumLoadThreshold > 100 {
+	if pc.LoadMediumThreshold <= 0 || pc.LoadMediumThreshold > 100 {
 		return fmt.Errorf("%s mediumLoadThreshold must be between 0 and 100", source)
 	}
-	if pc.LowLoadThreshold <= 0 || pc.LowLoadThreshold > 100 {
+	if pc.LoadLowThreshold <= 0 || pc.LoadLowThreshold > 100 {
 		return fmt.Errorf("%s lowLoadThreshold must be between 0 and 100", source)
 	}
 	if pc.HighTempThreshold <= 0 {

@@ -2,6 +2,7 @@ package autoperf
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -38,7 +39,36 @@ func Execute() error {
 
 	// Initialize current performance bias
 	currentPerfBias := "balance-power"
-	forceUpdateCounter := 0
+
+	// Initialize moving averages
+	const windowSize = 10
+	loadMA := make([]float64, 0, windowSize)
+	tempMA := make([]float64, 0, windowSize)
+
+	// Determine initial power config
+	isAC, err := power.IsACPlugged(cfg.SysfsPowerPath)
+	if err != nil {
+		return fmt.Errorf("failed to check initial AC status: %v", err)
+	}
+
+	// Create ticker for regular sampling
+	var ticker *time.Ticker
+	var lastACStatus bool = isAC
+	
+	updateTicker := func() {
+		if ticker != nil {
+			ticker.Stop()
+		}
+		powerCfg := cfg.Battery
+		if lastACStatus {
+			powerCfg = cfg.AC
+		}
+		interval := time.Duration(powerCfg.WaitBetweenUpdates) * time.Millisecond
+		ticker = time.NewTicker(interval)
+	}
+	
+	updateTicker()
+	defer ticker.Stop()
 
 	// Main monitoring loop
 	for {
@@ -46,77 +76,130 @@ func Execute() error {
 		case <-sigChan:
 			log.Println("Shutting down monitor daemon")
 			return nil
-		default:
+		case <-ticker.C:
 			if !cfg.Enabled {
-				time.Sleep(time.Duration(60) * time.Second) // Sleep for 60 seconds when disabled
 				continue
 			}
 
-			acPlugged, err := power.IsACPlugged(cfg.SysfsPowerPath)
-			if err != nil {
-				log.Printf("Error detecting power source: %v", err)
-				continue
-			}
-
-			// Select the appropriate power config
-			powerCfg := &cfg.Battery
-			if acPlugged {
-				powerCfg = &cfg.AC
-			}
-
-			forceUpdate := forceUpdateCounter >= 4
-			if forceUpdate {
-				forceUpdateCounter = 0
-			}
-
-			if err := runMonitoringCycle(cfg, powerCfg, acPlugged, &currentPerfBias, forceUpdate); err != nil {
+			if err := runReactiveMonitoring(cfg, &loadMA, &tempMA, &currentPerfBias); err != nil {
 				log.Printf("Error in monitoring cycle: %v", err)
 			}
-			forceUpdateCounter++
-			time.Sleep(time.Duration(powerCfg.WaitBetweenUpdates) * time.Second)
+			
+			// Check if AC status changed
+			isAC, err := power.IsACPlugged(cfg.SysfsPowerPath)
+			if err != nil {
+				log.Printf("Failed to check AC status: %v", err)
+				continue
+			}
+			if isAC != lastACStatus {
+				lastACStatus = isAC
+				updateTicker()
+			}
 		}
 	}
 }
 
-func runMonitoringCycle(cfg *config.Config, powerCfg *config.PowerConfig, acPlugged bool, currentPerfBias *string, forceUpdate bool) error {
-	cpuLoad, err := monitor.GetCPULoad(powerCfg.CPUSampleInterval)
-	if err != nil {
-		return err
-	}
+func runReactiveMonitoring(cfg *config.Config, loadMA, tempMA *[]float64, currentPerfBias *string) error {
+    // Check AC status
+    isAC, err := power.IsACPlugged(cfg.SysfsPowerPath)
+    if err != nil {
+        return fmt.Errorf("failed to check AC status: %v", err)
+    }
 
-	cpuTemp, err := monitor.GetCPUTemp()
-	if err != nil {
-		return err
-	}
+    // Select appropriate power config based on AC status
+    powerCfg := cfg.Battery
+    if isAC {
+        powerCfg = cfg.AC
+    }
 
-	// Determine appropriate energy_perf_bias value
-	var perfBias string
-	switch {
-	case cpuLoad > powerCfg.HighLoadThreshold && acPlugged:
-		perfBias = "performance"
-	case cpuLoad > powerCfg.MediumLoadThreshold && acPlugged:
-		perfBias = "balance-performance"
-	case cpuTemp > powerCfg.HighTempThreshold:
-		perfBias = "balance-power"
-	case cpuLoad <= powerCfg.LowLoadThreshold:
-		perfBias = "power"
-	case !acPlugged:
-		perfBias = "balance-power"
-	default:
-		perfBias = "balance-power"
-	}
+    // Get metrics
+    var metricValue float64
+    var psiStats *monitor.PSIStats
 
-	if perfBias != *currentPerfBias || forceUpdate {
-		if err := power.SetEnergyPerfBias(perfBias); err != nil {
-			return err
-		}
-		log.Printf("Status - Load: %.1f%%, Temp: %.1f°C, AC: %v, PerfBias: %s (changed from %s)",
-			cpuLoad, cpuTemp, acPlugged, perfBias, *currentPerfBias)
-		*currentPerfBias = perfBias
-	} else {
-		log.Printf("Status - Load: %.1f%%, Temp: %.1f°C, AC: %v, PerfBias: %s (unchanged)",
-			cpuLoad, cpuTemp, acPlugged, perfBias)
-	}
+    if cfg.MetricType == "PSI" {
+        psiStats, err = monitor.GetCPUPressure()
+        if err != nil {
+            return fmt.Errorf("failed to get PSI stats: %v", err)
+        }
+        metricValue = psiStats.Some.Avg10
+    } else {
+        cpuLoad, err := monitor.GetCPULoad(1)
+        if err != nil {
+            return err
+        }
+        metricValue = cpuLoad
+    }
 
-	return nil
+    // Get CPU temperature
+    cpuTemp, err := monitor.GetCPUTemp()
+    if err != nil {
+        return err
+    }
+
+    // Update moving averages
+    *tempMA = append(*tempMA, cpuTemp)
+    if len(*tempMA) > 10 {
+        *tempMA = (*tempMA)[1:]
+    }
+    avgTemp := average(*tempMA)
+
+    // Log metrics if verbose
+    if cfg.Verbose {
+        if cfg.MetricType == "PSI" {
+            log.Printf("Metrics - PSI: %.1f%%, Temp: %.1f°C, Power: %s",
+                metricValue, avgTemp, map[bool]string{true: "AC", false: "Battery"}[isAC])
+        } else {
+            log.Printf("Metrics - Load: %.1f%%, Temp: %.1f°C, Power: %s",
+                metricValue, avgTemp, map[bool]string{true: "AC", false: "Battery"}[isAC])
+        }
+    }
+
+    // Determine appropriate energy_perf_bias value
+    var perfBias string
+    switch {
+    case avgTemp > powerCfg.HighTempThreshold:
+        perfBias = "power"
+        if cfg.Verbose {
+            log.Printf("Setting power bias: high temperature (%.1f°C > %.1f°C threshold)",
+                avgTemp, powerCfg.HighTempThreshold)
+        }
+    case cfg.MetricType == "PSI" && metricValue > powerCfg.PSIHighThreshold:
+        perfBias = "performance"
+    case cfg.MetricType != "PSI" && metricValue > powerCfg.LoadHighThreshold:
+        perfBias = "performance"
+    case cfg.MetricType == "PSI" && metricValue > powerCfg.PSIMediumThreshold:
+        perfBias = "balance-performance"
+    case cfg.MetricType != "PSI" && metricValue > powerCfg.LoadMediumThreshold:
+        perfBias = "balance-performance"
+    case cfg.MetricType == "PSI" && metricValue < powerCfg.PSILowThreshold:
+        perfBias = "power"
+    case cfg.MetricType != "PSI" && metricValue < powerCfg.LoadLowThreshold:
+        perfBias = "power"
+    default:
+        perfBias = "balance-power"
+    }
+
+    // Update performance bias if changed
+    if perfBias != *currentPerfBias {
+        if err := power.SetEnergyPerfBias(perfBias); err != nil {
+            return err
+        }
+        log.Printf("Status - Metric: %.1f%%, Temp: %.1f°C, Power: %s, PerfBias: %s (changed from %s)",
+            metricValue, avgTemp, map[bool]string{true: "AC", false: "Battery"}[isAC],
+            perfBias, *currentPerfBias)
+        *currentPerfBias = perfBias
+    }
+
+    return nil
+}
+
+func average(values []float64) float64 {
+	if len(values) == 0 {
+		return 0
+	}
+	var sum float64
+	for _, v := range values {
+		sum += v
+	}
+	return sum / float64(len(values))
 }

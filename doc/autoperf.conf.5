@@ -25,13 +25,13 @@ Interval in seconds between monitoring cycles.
 .B CPULoadSampleInterval
 Duration in seconds over which CPU load is sampled.
 .TP
-.B LowLoadThreshold
+.B LoadLowThreshold
 CPU load threshold (percentage) below which power-saving mode is applied.
 .TP
-.B MediumLoadThreshold
+.B LoadMediumThreshold
 CPU load threshold (percentage) above which balanced mode is applied.
 .TP
-.B HighLoadThreshold
+.B LoadHighThreshold
 CPU load threshold (percentage) above which performance mode is applied.
 .TP
 .B HighTempThreshold
@@ -48,17 +48,17 @@ LogFile="/var/log/autoperf.log"
 [Battery]
 WaitBetweenUpdates=30
 CPULoadSampleInterval=10
-LowLoadThreshold=30
-MediumLoadThreshold=50
-HighLoadThreshold=80
+LoadLowThreshold=30
+LoadMediumThreshold=50
+LoadHighThreshold=80
 HighTempThreshold=75
 
 [AC]
 WaitBetweenUpdates=5
 CPULoadSampleInterval=10
-LowLoadThreshold=30
-MediumLoadThreshold=50
-HighLoadThreshold=80
+LoadLowThreshold=30
+LoadMediumThreshold=50
+LoadHighThreshold=80
 HighTempThreshold=90
 .fi
 .SH SEE ALSO

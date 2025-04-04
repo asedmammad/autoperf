@@ -1,14 +1,87 @@
 package monitor
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 )
+
+type PSIStats struct {
+	Some struct {
+		Avg10  float64
+		Avg60  float64
+		Avg300 float64
+		Total  float64
+	}
+	Full struct {
+		Avg10  float64
+		Avg60  float64
+		Avg300 float64
+		Total  float64
+	}
+}
+
+func GetCPUPressure() (*PSIStats, error) {
+	file, err := os.Open("/proc/pressure/cpu")
+	if err != nil {
+		return nil, fmt.Errorf("failed to open CPU pressure file: %v", err)
+	}
+	defer file.Close()
+
+	stats := &PSIStats{}
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+
+		if len(fields) < 2 {
+			continue
+		}
+
+		switch fields[0] {
+		case "some":
+			parseAvgFields(fields[1], &stats.Some)
+		case "full":
+			parseAvgFields(fields[1], &stats.Full)
+		}
+	}
+
+	return stats, scanner.Err()
+}
+
+func parseAvgFields(data string, target interface{}) {
+	parts := strings.Split(data, " ")
+	for _, part := range parts {
+		kv := strings.Split(part, "=")
+		if len(kv) != 2 {
+			continue
+		}
+
+		value, err := strconv.ParseFloat(kv[1], 64)
+		if err != nil {
+			continue
+		}
+
+		switch kv[0] {
+		case "avg10":
+			reflect.ValueOf(target).Elem().FieldByName("Avg10").SetFloat(value)
+		case "avg60":
+			reflect.ValueOf(target).Elem().FieldByName("Avg60").SetFloat(value)
+		case "avg300":
+			reflect.ValueOf(target).Elem().FieldByName("Avg300").SetFloat(value)
+		case "total":
+			reflect.ValueOf(target).Elem().FieldByName("Total").SetFloat(value)
+		}
+	}
+}
 
 func GetCPULoad(sampleInterval int) (float64, error) {
 	percentage, err := cpu.Percent(time.Duration(sampleInterval)*time.Second, false)

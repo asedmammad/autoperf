@@ -61,17 +61,17 @@ LogFile="/var/log/autoperf.log"
 [Battery]
 WaitBetweenUpdates=30
 CPULoadSampleInterval=10
-LowLoadThreshold=30
-MediumLoadThreshold=50
-HighLoadThreshold=80
+LoadLowThreshold=30
+LoadMediumThreshold=50
+LoadHighThreshold=80
 HighTempThreshold=75
 
 [AC]
 WaitBetweenUpdates=5
 CPULoadSampleInterval=10
-LowLoadThreshold=25
-MediumLoadThreshold=50
-HighLoadThreshold=80
+LoadLowThreshold=25
+LoadMediumThreshold=50
+LoadHighThreshold=80
 HighTempThreshold=90
  ```
 
