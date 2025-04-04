@@ -47,7 +47,7 @@ func Execute() error {
 			return nil
 		default:
 			if !cfg.Enabled {
-				time.Sleep(time.Duration(60) * time.Second) // Sleep for 5 seconds when disabled
+				time.Sleep(time.Duration(60) * time.Second) // Sleep for 60 seconds when disabled
 				continue
 			}
 
